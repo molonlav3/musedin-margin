@@ -1,0 +1,1 @@
+{"description":"Margin: sponsored lines for agent APIs — first version","license":"MIT","main":"src/server.js","name":"musedin-margin","scripts":{"start":"node src/server.js","test":"node --test test/store.test.js test/server.test.js"},"type":"commonjs","version":"0.1.0"}
