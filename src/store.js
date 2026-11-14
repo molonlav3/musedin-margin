@@ -4,6 +4,27 @@
 "use strict";
 
 const VALID_STATUSES = ["pending", "approved", "rejected"];
+const MAX_TEXT = 280;
+
+// A line's creative as SPEC.md has it: text is one line, link is where the line
+// points. http and https only: a "javascript:" or "data:" link is never stored.
+function checkCreative({ text, link, sponsor }) {
+  for (const [name, value] of Object.entries({ text, link, sponsor })) {
+    if (value !== undefined && typeof value !== "string") throw new Error(`${name} must be a string`);
+  }
+  if (text !== undefined && (/[\r\n]/.test(text) || text.length > MAX_TEXT)) {
+    throw new Error(`text is one line of at most ${MAX_TEXT} characters`);
+  }
+  if (link !== undefined) {
+    let url = null;
+    try {
+      url = new URL(link);
+    } catch {
+      /* not a URL */
+    }
+    if (!url || (url.protocol !== "https:" && url.protocol !== "http:")) throw new Error("link must be an http or https URL");
+  }
+}
 
 class Store {
   constructor() {
@@ -13,10 +34,12 @@ class Store {
 
   // Submit a line for review. Returns the stored line (status "pending").
   // Throws on a missing field or a line that would hide its label.
-  submitLine({ slotId, text, link, sponsor }) {
+  submitLine({ slotId, text, link, sponsor } = {}) {
     if (!slotId || !text || !link || !sponsor) {
       throw new Error("slotId, text, link and sponsor are all required");
     }
+    if (typeof slotId !== "string") throw new Error("slotId must be a string");
+    checkCreative({ text, link, sponsor });
     const line = {
       id: String(this.nextId++),
       slotId,
@@ -50,9 +73,10 @@ class Store {
 
   // Edit a line's creative. An edit sends it back to "pending" review
   // before it can run again (SPEC.md review flow, step 4).
-  updateLine(id, { text, link, sponsor }) {
+  updateLine(id, { text, link, sponsor } = {}) {
     const line = this.lines.get(String(id));
     if (!line) throw new Error(`no line with id ${id}`);
+    checkCreative({ text, link, sponsor });
     if (text !== undefined) line.text = text;
     if (link !== undefined) line.link = link;
     if (sponsor !== undefined) line.sponsor = sponsor;

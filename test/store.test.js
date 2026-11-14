@@ -34,6 +34,22 @@ test("rejecting without a reason fails, and an edit re-queues review", () => {
   assert.equal(store.getLine(line.id).reviewStatus, "pending");
 });
 
+test("a link is http or https, text is one line, and a bad edit changes nothing", () => {
+  const store = new Store();
+  const ok = { slotId: "s1", text: "t", link: "https://example.com", sponsor: "Acme" };
+  assert.throws(() => store.submitLine({ ...ok, link: "javascript:alert(1)" }), /http or https/);
+  assert.throws(() => store.submitLine({ ...ok, link: "not a url" }), /http or https/);
+  assert.throws(() => store.submitLine({ ...ok, text: "one\ntwo" }), /one line/);
+  assert.throws(() => store.submitLine({ ...ok, text: "x".repeat(281) }), /one line/);
+  assert.throws(() => store.submitLine({ ...ok, sponsor: 7 }), /must be a string/);
+  assert.equal(store.listLines().length, 0, "nothing refused was stored");
+  const line = store.submitLine(ok);
+  store.reviewLine(line.id, "approved");
+  assert.throws(() => store.updateLine(line.id, { link: "data:text/html,x" }), /http or https/);
+  assert.equal(store.getLine(line.id).link, "https://example.com");
+  assert.equal(store.getLine(line.id).reviewStatus, "approved", "a refused edit leaves the line as it was");
+});
+
 test("missing fields fail at submit", () => {
   const store = new Store();
   assert.throws(() => store.submitLine({ slotId: "s1", text: "t" }), /required/);

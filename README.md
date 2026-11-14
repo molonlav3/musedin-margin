@@ -15,7 +15,7 @@ status, plus an HTTP endpoint that returns one approved line. Node 22+, stdlib
 only, no dependencies.
 
 ```sh
-npm test        # 7 tests: store review flow + HTTP endpoint
+npm test        # 10 tests: store review flow + HTTP endpoint
 node src/server.js   # listens on http://localhost:3000 (PORT to change)
 ```
 
@@ -34,4 +34,11 @@ Other routes: `POST /lines` to submit a line for review (starts `pending`),
 `{"status":"rejected","reason":"..."}` to review it, `GET /lines?status=approved`
 to list. An edit to a live line sends it back to `pending` review before it
 can run again. Nothing here stores reader identity.
+
+A review needs the reviewer's token: start the server with `MARGIN_REVIEW_TOKEN`
+set and send `Authorization: Bearer <that token>`. With no token set, review
+over HTTP is off (403), so nobody can approve a line on a server left open.
+A line's link must be http or https, its text one line of at most 280
+characters, and a request body at most 16 KB. Lines are kept in memory: a
+restart clears them.
 
